@@ -1,14 +1,16 @@
 <?php
 require_once 'db_access.php';
+
 class DataBaseAdding
 {
-   public static function showForm($db, $values = [], $errors = []) {
+    public static function showForm($db, $values = [], $errors = [])
+    {
         $film_name = $values['film_name'] ?? '';
         $film_year = $values['film_year'] ?? '';
         $film_format = $values['film_format'] ?? '';
         $film_actors = $values['film_actors'] ?? '';
 
-        
+
         $form = <<<_FORM
                 <table class=\"responsive-table\">
    <thead>
@@ -36,7 +38,7 @@ class DataBaseAdding
 <button  class="btn btn-info my-2 my-sm-0" type="submit" value="Add File">Upload File!</button></form>
 </td></tr></table>
 _FORM;
-        print $form ;
+        print $form;
 
         if ($errors) {
             print "<pre>Correct errors below and try again:</pre> </br>";
@@ -46,7 +48,8 @@ _FORM;
         }
     }
 
-    public static function fileupload($db) {
+    public static function fileupload($db)
+    {
         $newFilename = $_SERVER['DOCUMENT_ROOT'] . '/uploads';
         $uploadInfo = $_FILES['upload'];
         switch ($uploadInfo['type']) {
@@ -66,7 +69,8 @@ _FORM;
         self::fileParse($newFilename, $db);
     }
 
-    private static function fileParse(string $filename, $db) {
+    private static function fileParse(string $filename, $db)
+    {
         $stringOfFilms = file_get_contents($filename);
         preg_match_all("#Title: (.+\n)Release Year: (.+\n)Format: (.+\n)Stars: (.+\n)#", $stringOfFilms, $matches);
         array_shift($matches);
@@ -83,7 +87,8 @@ _FORM;
         unset($_FILES['upload']['tmp_name']);
     }
 
-    public static function validateUpload($db, $values = [], $errors = []) {
+    public static function validateUpload($db, $values = [], $errors = [])
+    {
         if ($_POST) {
             $values = $_POST;
         } else
@@ -107,7 +112,8 @@ _FORM;
         }
     }
 
-    private static function executeUpload($db, $values) {
+    private static function executeUpload($db, $values)
+    {
         $film_name = $values['film_name'];
         $film_year = $values['film_year'];
         $film_format = $values['film_format'];
@@ -138,26 +144,29 @@ _FORM;
             }
         }
     }
-
 }
 
-class DataBaseResults {
+class DataBaseResults
+{
 
-    public static function sorting($db, $by = "") {
+    public static function sorting($db, $by = "")
+    {
         $stmt = $db->prepare("SELECT fi.film_name, fi.film_format,fi.film_year,fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor using(film_id) INNER JOIN actor_info using(actor_id) group by film_id ORDER BY fi.$by ASC");
         $stmt->execute();
         $result = $stmt->fetchAll();
         self::showMovies($db, $result);
     }
 
-    public static function deletion($db, $delete) {
+    public static function deletion($db, $delete)
+    {
         $stmt = $db->prepare("DELETE FROM film_info WHERE film_info.film_id = $delete");
         $stmt->execute();
         //$result = $stmt->fetchAll();
         self::showMovies($db);
     }
 
-    public static function searching($db, $search) {
+    public static function searching($db, $search)
+    {
         $search = "'%" . ucwords(strtolower($search)) . "%'";
         $stmt = $db->prepare("SELECT fi.film_name, fi.film_format, fi.film_year, fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor USING(film_id) INNER JOIN actor_info USING(actor_id) WHERE fi.film_name LIKE $search GROUP BY film_id ");
         $stmt->execute();
@@ -173,27 +182,22 @@ class DataBaseResults {
         }
     }
 
-    public static function showMovies($db, $result = '') {
+    public static function showMovies($db, $result = '')
+    {
         if ($result === '') {
             $stmt = $db->prepare("SELECT fi.film_name, fi.film_format,fi.film_year,fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor using(film_id) INNER JOIN actor_info using(actor_id) group by film_id");
             $stmt->execute();
             $result = $stmt->fetchAll();
         }
-       
-       
-
         foreach ($result as $key => $array) {
-
             print "<tr>";
             print "<th scope=\"row\"> {$array['film_name']}</th>";
             print "<td> {$array['film_year']}</td>";
             print "<td> {$array['film_format']}</td>";
-            print "<td> {$array['group_concat(actor_name)']}</td>";
+            print "<td>" . str_replace(",", ", ", $array['group_concat(actor_name)']) . "</td>";
             print "<td><button class=\"btn btn-info my-2 my-sm-0\" type=\"submit\" name=\"delete\" value =\"{$array['film_id']}\">Delete</button></td>";
-            
             print "</tr>";
         }
         print "</table></form>";
     }
-
 }
