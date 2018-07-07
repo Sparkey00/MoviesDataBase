@@ -1,0 +1,13 @@
+{
+    "name": "vendor/movies",
+    "description": "Описание проекта Movies.",
+    "authors": [
+        {
+            "name": "Spark",
+            "email": "your@email.here"
+        }
+    ],
+    "require": {
+        "twbs/bootstrap": "dev-master"
+    }
+}
