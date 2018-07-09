@@ -80,6 +80,7 @@ _FORM;
         foreach ($result as $values) {
             self::validateUpload($db, $values);
         }
+        
         unset($_FILES['upload']['tmp_name']);
     }
 
@@ -139,9 +140,9 @@ _FORM;
                 $statement = $db->prepare("INSERT INTO film_actor (film_id, actor_id) VALUES(\"$film_id\",\"$actor_id\")");
                 $statement->execute();
             }
-        }
-        self::showForm($db, $values);
+        }        
         print "Succesfully uploaded!";
+        header ("location: {$_SERVER['PHP_SELF']}");
     }
 
 }
