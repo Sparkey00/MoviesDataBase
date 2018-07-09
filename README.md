@@ -8,6 +8,7 @@ CREATE TABLE `movies`.`film_actor` ( `film_id` INT NOT NULL , `actor_id` INT NOT
 ALTER TABLE `film_actor` ADD PRIMARY KEY( `film_id`, `actor_id`);
 ALTER TABLE `actor_info`DEFAULT  CHARSET=utf8 COLLATE utf8_unicode_ci;
 ALTER TABLE `film_info` DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
+ALTER TABLE `film_actor` DEFAULT CHARSET=utf8 COLLATE utf8_unicode_ci;
 2. Open db_access.php and set your own login/pass/db_name/host for accessing your db.
 3. Start you php-server and go to ../index.php
 
