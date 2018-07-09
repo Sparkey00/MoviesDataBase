@@ -19,12 +19,27 @@
                 });
             });
 
+function showSearchResults(str) {
+    if (str.length == 0) {
+        window.location.reload(true);
+        //document.getElementById("results").innerHTML = "";
+        return;
+    } else {
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+            if (this.readyState == 4 && this.status == 200) {
+                document.getElementById("results").innerHTML = this.responseText;
+            }
+        };
+        xmlhttp.open("GET", "search.php?search=" + str, true);
+        xmlhttp.send();
+    }
+}
         </script>
         <?php
         require_once 'db_access.php';
         require_once 'classes.php';
-        $db = new PDO('mysql:host=' . $DB_HOST . ';dbname=' . $dbName, $dbLogin, $dbPass);
-        
+        $db = new PDO('mysql:host=' . $DB_HOST . ';dbname=' . $dbName, $dbLogin, $dbPass,array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\''));        
          print "<form action=\"{$_SERVER['PHP_SELF']}\" method=\"post\">" .
                 "<nav class=\"navbar navbar-expand-lg navbar-dark navbar-bg mb-5\"><div >
         <ul class=\"navbar-nav mr-auto\">
@@ -35,13 +50,13 @@
                  <a style=\"color: #fff;\" class=\"nav-link\" href=\"db_add.php\">Add new movie to the database!</a>
             </li>           
       <li class=\"nav-item\">
-                        <input  name=\"search\" type=\"text\" placeholder=\"Search\" >
+                        <input  name=\"search\" type=\"text\" placeholder=\"Search\" onkeyup=\"showSearchResults(this.value)\">
             <button  class=\"btn btn-info my-2 my-sm-0\" type=\"submit\">Search</button>
              </li>
             </ul>
     </div></nav>
      <div class=\"container\">
-  <table class=\"responsive-table\">
+  <table id=\"results\" class=\"responsive-table\">
    <thead>
       <tr>
         <th scope=\"col\"><input hidden type=\"radio\" selected id=\"title\"

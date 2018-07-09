@@ -1,16 +1,14 @@
 <?php
 require_once 'db_access.php';
-
 class DataBaseAdding
 {
-    public static function showForm($db, $values = [], $errors = [])
-    {
+   public static function showForm($db, $values = [], $errors = []) {
         $film_name = $values['film_name'] ?? '';
         $film_year = $values['film_year'] ?? '';
         $film_format = $values['film_format'] ?? '';
         $film_actors = $values['film_actors'] ?? '';
 
-
+        
         $form = <<<_FORM
                 <table class=\"responsive-table\">
    <thead>
@@ -38,18 +36,17 @@ class DataBaseAdding
 <button  class="btn btn-info my-2 my-sm-0" type="submit" value="Add File">Upload File!</button></form>
 </td></tr></table>
 _FORM;
-        print $form;
+        print $form ;
 
         if ($errors) {
-            print "<pre>Correct errors below and try again:</pre> </br>";
+            print "Correct errors below and try again: </br>";
             foreach ($errors as $key => $value) {
                 print $value . "</br>";
             }
         }
     }
 
-    public static function fileupload($db)
-    {
+    public static function fileupload($db) {
         $newFilename = $_SERVER['DOCUMENT_ROOT'] . '/uploads';
         $uploadInfo = $_FILES['upload'];
         switch ($uploadInfo['type']) {
@@ -69,8 +66,7 @@ _FORM;
         self::fileParse($newFilename, $db);
     }
 
-    private static function fileParse(string $filename, $db)
-    {
+    private static function fileParse(string $filename, $db) {
         $stringOfFilms = file_get_contents($filename);
         preg_match_all("#Title: (.+\n)Release Year: (.+\n)Format: (.+\n)Stars: (.+\n)#", $stringOfFilms, $matches);
         array_shift($matches);
@@ -87,8 +83,7 @@ _FORM;
         unset($_FILES['upload']['tmp_name']);
     }
 
-    public static function validateUpload($db, $values = [], $errors = [])
-    {
+    public static function validateUpload($db, $values = [], $errors = []) {
         if ($_POST) {
             $values = $_POST;
         } else
@@ -96,24 +91,26 @@ _FORM;
 
         foreach ($values as $key => $value) {
             $values[$key] = trim(htmlentities($value));
-            if (strlen($values[$key]) == 0)
-                $errors[] = "Field $key is empty. Please, try again.";
+            if (strlen(trim($values[$key])) == 0)
+                $errors[] = "Field $key is empty.";
         }
+        if($values['film_year']>(date('Y')+1)||$values['film_year']<1895)//1895 - release year of "L'Arrivée d'un train en gare de la Ciotat"
+        {$errors[]="Check the release year of {$values['film_name']} ";}
         $film_name = $values['film_name'];
         $stmt = $db->prepare("SELECT * FROM film_info WHERE film_name =\"$film_name\"");
         $stmt->execute();
         $result = $stmt->fetchAll();
         if (!empty($result))
-            $errors[] = "Film with that name already exists";
+        {$errors[] = "Film with that name already exists";}
+        
         if (empty($errors))
             self::executeUpload($db, $values);
         else {
-            //showForm($db, $values, $errors);
+            self::showForm($db, $values, $errors);
         }
     }
 
-    private static function executeUpload($db, $values)
-    {
+    private static function executeUpload($db, $values) {
         $film_name = $values['film_name'];
         $film_year = $values['film_year'];
         $film_format = $values['film_format'];
@@ -143,61 +140,76 @@ _FORM;
                 $statement->execute();
             }
         }
+        self::showForm($db, $values);
+        print "Succesfully uploaded!";
     }
+
 }
 
-class DataBaseResults
-{
+class DataBaseResults {
 
-    public static function sorting($db, $by = "")
-    {
+    public static function sorting($db, $by = "") {
         $stmt = $db->prepare("SELECT fi.film_name, fi.film_format,fi.film_year,fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor using(film_id) INNER JOIN actor_info using(actor_id) group by film_id ORDER BY fi.$by ASC");
         $stmt->execute();
         $result = $stmt->fetchAll();
         self::showMovies($db, $result);
     }
 
-    public static function deletion($db, $delete)
-    {
+    public static function deletion($db, $delete) {
         $stmt = $db->prepare("DELETE FROM film_info WHERE film_info.film_id = $delete");
         $stmt->execute();
         //$result = $stmt->fetchAll();
         self::showMovies($db);
     }
 
-    public static function searching($db, $search)
-    {
-        $search = "'%" . ucwords(strtolower($search)) . "%'";
+    public static function searching($db, $search,$aj=false) {
+        $search=ucwords(mb_strtolower($search));        
+        $search = "'%" . $search . "%'";
         $stmt = $db->prepare("SELECT fi.film_name, fi.film_format, fi.film_year, fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor USING(film_id) INNER JOIN actor_info USING(actor_id) WHERE fi.film_name LIKE $search GROUP BY film_id ");
         $stmt->execute();
         $result = $stmt->fetchAll();
-
-        if (isset($result[0]['film_name'])) {
-            self::showMovies($db, $result);
-        } else {
-            $stmt = $db->prepare("SELECT fi.film_name, fi.film_format, fi.film_year, fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor USING(film_id) INNER JOIN actor_info USING(actor_id) WHERE actor_info.actor_name LIKE $search GROUP BY film_id ");
-            $stmt->execute();
-            $result = $stmt->fetchAll();
-            self::showMovies($db, $result);
-        }
+         
+            if (isset($result[0]['film_name'])) {
+               if(!$aj) self::showMovies($db, $result);
+               else return $result;
+            } else {
+                $stmt = $db->prepare("SELECT fi.film_name, fi.film_format, fi.film_year, fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor USING(film_id) INNER JOIN actor_info USING(actor_id) WHERE actor_info.actor_name LIKE $search GROUP BY film_id ");
+                $stmt->execute();
+                $result = $stmt->fetchAll();
+                if(!$aj) self::showMovies($db, $result);
+                else return $result;
+                
+            }
+        
+        
     }
 
-    public static function showMovies($db, $result = '')
-    {
+    public static function showMovies($db, $result = '',$aj=false) {
         if ($result === '') {
             $stmt = $db->prepare("SELECT fi.film_name, fi.film_format,fi.film_year,fi.film_id, group_concat(actor_name) FROM film_info fi INNER JOIN film_actor using(film_id) INNER JOIN actor_info using(actor_id) group by film_id");
             $stmt->execute();
             $result = $stmt->fetchAll();
         }
+
+        $ajaxreply = "";
+
         foreach ($result as $key => $array) {
-            print "<tr>";
-            print "<th scope=\"row\"> {$array['film_name']}</th>";
-            print "<td> {$array['film_year']}</td>";
-            print "<td> {$array['film_format']}</td>";
-            print "<td>" . str_replace(",", ", ", $array['group_concat(actor_name)']) . "</td>";
-            print "<td><button class=\"btn btn-info my-2 my-sm-0\" type=\"submit\" name=\"delete\" value =\"{$array['film_id']}\">Delete</button></td>";
-            print "</tr>";
+
+            $ajaxreply .= "<tr>";
+            $ajaxreply .= "<th scope=\"row\"> {$array['film_name']}</th>";
+            $ajaxreply .= "<td> {$array['film_year']}</td>";
+            $ajaxreply .= "<td> {$array['film_format']}</td>";
+            $ajaxreply .= "<td>" . str_replace(",", ", ", $array['group_concat(actor_name)']) . "</td>";
+            $ajaxreply .= "<td><button class=\"btn btn-info my-2 my-sm-0\" type=\"submit\" name=\"delete\" value =\"{$array['film_id']}\">Delete</button></td>";
+
+            $ajaxreply .= "</tr>";
         }
-        print "</table></form>";
+        $ajaxreply .= "</table></form>";
+        if ($aj)
+        {return $ajaxreply;}
+        else {
+            echo $ajaxreply;
+        }
     }
+
 }

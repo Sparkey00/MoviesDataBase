@@ -11,7 +11,7 @@
         <?php
         require_once 'db_access.php';
         require_once 'classes.php';
-        $db = new PDO('mysql:host=' . $DB_HOST . ';dbname=' . $dbName, $dbLogin, $dbPass);
+        $db = new PDO('mysql:host=' . $DB_HOST . ';dbname=' . $dbName, $dbLogin, $dbPass,array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\''));
 print "<form action=\"{$_SERVER['PHP_SELF']}\" method=\"post\">" .
                 "<nav class=\"navbar navbar-expand-lg navbar-dark navbar-bg mb-5\"><div>
         <ul class=\"navbar-nav mr-auto\">
@@ -32,9 +32,8 @@ print "<form action=\"{$_SERVER['PHP_SELF']}\" method=\"post\">" .
         if (empty($_POST)) {
             DataBaseAdding::showForm($db);
         } else {
-            DataBaseAdding::validateUpload($db);
-            DataBaseAdding::showForm($db);
-            print "Succesfully uploaded!";
+            DataBaseAdding::validateUpload($db);            
+            
         }
         print "</div>";
         ?>
